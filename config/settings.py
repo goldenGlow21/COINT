@@ -40,12 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Third-party apps
     'rest_framework',
+    'corsheaders',
     # Local apps
     'api',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -179,3 +181,15 @@ DATA_DIR = BASE_DIR / 'data'
 RAW_DATA_DIR = DATA_DIR / 'raw'
 PROCESSED_DATA_DIR = DATA_DIR / 'processed'
 RESULTS_DATA_DIR = DATA_DIR / 'results'
+
+# CORS settings for frontend integration
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',  # React development server
+    'http://127.0.0.1:3000',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# Allow all origins in development (remove in production)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
