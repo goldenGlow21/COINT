@@ -1,0 +1,65 @@
+{
+  "summary": {
+    "total_tokens": 1,
+    "honeypots_detected": 1,
+    "safe_tokens": 0,
+    "honeypot_rate": 100.0,
+    "threshold_used": 0.5999999999999999,
+    "threshold_levels": {
+      "CRITICAL": 0.9991567730903625,
+      "HIGH": 0.9976022243499756,
+      "MEDIUM": 0.5999999999999999,
+      "LOW": 0.29999999999999993
+    },
+    "explanation_method": "xgboost_feature_contributions",
+    "risk_distribution": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 1,
+      "LOW": 0,
+      "VERY_LOW": 0
+    }
+  },
+  "top_10_risky_tokens": [
+    {
+      "rank": 1,
+      "token_addr_idx": 1,
+      "token_addr": "0xd403F941FFD6ff30d139B97526ff655E5142ed21",
+      "probability": 0.9861518740653992,
+      "prediction": "HONEYPOT",
+      "risk_level": "MEDIUM",
+      "top_contributing_features": [
+        {
+          "feature": "gini_coefficient",
+          "feature_value": -0.615889133,
+          "contribution": 5.1727800369262695,
+          "direction": "increases_risk"
+        },
+        {
+          "feature": "s_owner_count",
+          "feature_value": 5.0,
+          "contribution": -0.6358513236045837,
+          "direction": "decreases_risk"
+        },
+        {
+          "feature": "sell_buy_cnt_ratio",
+          "feature_value": 2.963157894736842,
+          "contribution": 0.5534065365791321,
+          "direction": "increases_risk"
+        },
+        {
+          "feature": "unique_buyers",
+          "feature_value": 12.0,
+          "contribution": -0.47902360558509827,
+          "direction": "decreases_risk"
+        },
+        {
+          "feature": "activity_intensity",
+          "feature_value": 2.246805313422673,
+          "contribution": 0.45461660623550415,
+          "direction": "increases_risk"
+        }
+      ]
+    }
+  ]
+}

@@ -156,31 +156,20 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'pipeline.log',
-            'formatter': 'verbose',
-        },
     },
     'loggers': {
         'pipeline': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
         'api': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
     },
 }
-
-# Data directories
-DATA_DIR = BASE_DIR / 'data'
-RAW_DATA_DIR = DATA_DIR / 'raw'
-PROCESSED_DATA_DIR = DATA_DIR / 'processed'
-RESULTS_DATA_DIR = DATA_DIR / 'results'
 
 # CORS settings for frontend integration
 CORS_ALLOWED_ORIGINS = [
@@ -193,3 +182,8 @@ CORS_ALLOW_CREDENTIALS = True
 # Allow all origins in development (remove in production)
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
+
+# Blockchain API Settings
+ETHEREUM_RPC_URL = config('ETHEREUM_RPC_URL', default='')
+ETHERSCAN_API_KEY = config('ETHERSCAN_API_KEY', default='')
+ETHERSCAN_API_URL = config('ETHERSCAN_API_URL', default='https://api.etherscan.io/v2/api')

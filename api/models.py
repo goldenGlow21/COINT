@@ -38,6 +38,12 @@ class TokenInfo(models.Model):
         max_length=50,
         help_text="Router type used by the pair"
     )
+    token_creator_addr = models.CharField(
+        max_length=42,
+        blank=True,
+        null=True,
+        help_text="Token creator address"
+    )
 
     class Meta:
         db_table = 'token_info'
@@ -122,21 +128,16 @@ class Result(models.Model):
         db_index=True,
         help_text="Analyzed token contract address"
     )
-    token_info = models.OneToOneField(
-        TokenInfo,
-        on_delete=models.CASCADE,
-        related_name='result',
-        help_text="Link to token information"
-    )
 
     risk_score = models.FloatField(
         help_text="Final scam score calculated after analysis"
     )
-    scam_types = models.JSONField(
-        help_text="List of detected scam categories"
+    scam_types = models.CharField(
+        max_length=100,
+        help_text="Detected scam categories"
     )
-    victim_insights = models.JSONField(
-        help_text="List of scam indicators found in analysis"
+    victim_insights = models.TextField(
+        help_text="Scam indicators found in analysis"
     )
 
     created_at = models.DateTimeField(
@@ -194,24 +195,6 @@ class PairEvent(models.Model):
         help_text="Preprocessed event log in JSON format"
     )
 
-    token0 = models.CharField(
-        max_length=42,
-        help_text="Token0 address in pair"
-    )
-    token1 = models.CharField(
-        max_length=42,
-        help_text="Token1 address in pair"
-    )
-    reserve0 = models.DecimalField(
-        max_digits=78,
-        decimal_places=18,
-        help_text="Current reserve of token0"
-    )
-    reserve1 = models.DecimalField(
-        max_digits=78,
-        decimal_places=18,
-        help_text="Current reserve of token1"
-    )
     lp_total_supply = models.DecimalField(
         max_digits=78,
         decimal_places=18,
@@ -421,3 +404,202 @@ class ExitProcessedData(models.Model):
 
     def __str__(self):
         return f"Exit data for token {self.token_info.id}, window {self.win_id}"
+
+
+class HoneypotDaResult(models.Model):
+    """
+    Stores honeypot dynamic analysis results.
+    One record per token, created by honeypot_DA module.
+    """
+    token_info = models.OneToOneField(
+        TokenInfo,
+        on_delete=models.CASCADE,
+        related_name='honeypot_da_result',
+        primary_key=True,
+        db_column='token_addr_idx'
+    )
+
+    verified = models.BooleanField(
+        help_text="Contract verified on Etherscan"
+    )
+
+    # Buy/Sell test
+    buy_sell_result = models.BooleanField(
+        help_text="Buy and sell both successful"
+    )
+    buy_sell_return_rate = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Return rate percentage (0-100)"
+    )
+
+    # Blacklist check
+    blacklist_result = models.BooleanField()
+    blacklist_confidence = models.CharField(max_length=10)
+
+    # Trading suspend check
+    trading_suspend_result = models.BooleanField()
+    trading_suspend_confidence = models.CharField(max_length=10)
+
+    # Exterior call check
+    exterior_call_result = models.BooleanField()
+    exterior_call_confidence = models.CharField(max_length=10)
+
+    # Unlimited mint
+    unlimited_mint_result = models.BooleanField()
+    unlimited_mint_confidence = models.CharField(max_length=10)
+
+    # Balance manipulation
+    balance_manipulation_result = models.BooleanField()
+    balance_manipulation_confidence = models.CharField(max_length=10)
+
+    # Tax manipulation
+    tax_manipulation_result = models.BooleanField()
+    tax_manipulation_confidence = models.CharField(max_length=10)
+
+    # Existing holders check
+    existing_holders_result = models.BooleanField()
+    existing_holders_confidence = models.CharField(max_length=10)
+
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'honeypot_da_result'
+
+    def __str__(self):
+        return f"Honeypot DA result for token {self.token_info.id}"
+
+
+class HoneypotMlResult(models.Model):
+    """
+    Stores honeypot ML analysis results.
+    One record per token, created by honeypot_ML module.
+    """
+    token_info = models.OneToOneField(
+        TokenInfo,
+        on_delete=models.CASCADE,
+        related_name='honeypot_ml_result',
+        primary_key=True,
+        db_column='token_addr_idx'
+    )
+
+    is_honeypot = models.BooleanField(
+        help_text="Honeypot prediction result"
+    )
+    probability = models.FloatField(
+        help_text="Honeypot probability (0-1)"
+    )
+    risk_level = models.CharField(
+        max_length=20,
+        help_text="Risk level: CRITICAL/HIGH/MEDIUM/LOW/VERY_LOW"
+    )
+    threshold = models.FloatField(
+        help_text="Decision threshold from model"
+    )
+    top_contributing_features = models.JSONField(
+        help_text="Top 5 contributing features with values and directions"
+    )
+
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'honeypot_ml_result'
+
+    def __str__(self):
+        return f"Honeypot ML result for token {self.token_info.id} (prob: {self.probability:.4f})"
+
+
+class ExitMlResult(models.Model):
+    """
+    Stores exit scam ML analysis results.
+    One record per token, created by exit_ML module.
+    """
+    token_info = models.OneToOneField(
+        TokenInfo,
+        on_delete=models.CASCADE,
+        related_name='exit_ml_result',
+        primary_key=True,
+        db_column='token_addr_idx'
+    )
+
+    probability = models.FloatField(
+        help_text="Exit scam probability (0-1)"
+    )
+    threshold = models.FloatField(
+        default=0.6047,
+        help_text="Decision threshold from model"
+    )
+    is_exit_scam = models.BooleanField(
+        help_text="True if probability >= threshold"
+    )
+
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = 'exit_ml_result'
+
+    def __str__(self):
+        return f"Exit ML result for token {self.token_info.id} (prob: {self.probability:.4f})"
+
+
+class ExitMlDetectTransaction(models.Model):
+    """
+    Stores top suspicious transactions detected by exit_ML model.
+    Up to 3 records per ExitMlResult (detect_tx_1, detect_tx_2, detect_tx_3).
+    """
+    exit_ml_result = models.ForeignKey(
+        ExitMlResult,
+        on_delete=models.CASCADE,
+        related_name='detect_transactions',
+        db_column='exit_ml_result_id'
+    )
+
+    rank = models.IntegerField(
+        help_text="Transaction rank (1, 2, or 3)"
+    )
+    timestamp = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Transaction timestamp"
+    )
+    tx_hash = models.CharField(
+        max_length=66,
+        null=True,
+        blank=True,
+        help_text="Transaction hash"
+    )
+    feature_values = models.JSONField(
+        help_text="Top instance feature values (scaled) as JSON"
+    )
+
+    class Meta:
+        db_table = 'exit_ml_detect_transaction'
+        ordering = ['exit_ml_result', 'rank']
+        unique_together = [['exit_ml_result', 'rank']]
+
+    def __str__(self):
+        return f"Detect TX {self.rank} for result {self.exit_ml_result_id}"
+
+
+class ExitMlDetectStatic(models.Model):
+    """
+    Stores static (bag-level) features detected by exit_ML model.
+    One record per ExitMlResult.
+    """
+    exit_ml_result = models.OneToOneField(
+        ExitMlResult,
+        on_delete=models.CASCADE,
+        related_name='detect_static',
+        primary_key=True,
+        db_column='exit_ml_result_id'
+    )
+
+    feature_values = models.JSONField(
+        help_text="Top static feature values as JSON"
+    )
+
+    class Meta:
+        db_table = 'exit_ml_detect_static'
+
+    def __str__(self):
+        return f"Detect static for result {self.exit_ml_result_id}"

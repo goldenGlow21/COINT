@@ -4,3 +4,18 @@ django-cors-headers==4.9.0
 djangorestframework==3.16.1
 python-decouple==3.8
 sqlparse==0.5.3
+
+# ML dependencies for honeypot_ML
+# XGBoost 1.7.6 required (2.0.0+ has compatibility issues with feature contributions)
+xgboost==1.7.6
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+
+# ML dependencies for exit_ML (attention-based MIL model)
+torch==2.9.1
+python-dateutil==2.9.0.post0
+
+# Data collection dependencies
+web3==6.20.0
+requests==2.32.3

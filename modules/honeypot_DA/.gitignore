@@ -1,0 +1,50 @@
+__pycache__
+.history
+.hypothesis/
+build/
+reports/
+results/
+*.csv
+# Environment
+.env
+*.env
+!.env.example
+venv
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Results (keep directory but ignore JSON files)
+results/*.json
+
+# Token list (keep example but ignore actual file)
+tokens.txt
+!tokens.example.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
