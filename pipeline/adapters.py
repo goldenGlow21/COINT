@@ -28,6 +28,7 @@ class DataCollectorAdapter:
             - ETHERSCAN_API_KEY: Etherscan API key
             - ETHERSCAN_API_URL: Etherscan V2 API URL
             - MORALIS_API_KEY: Moralis API key
+            - CHAINBASE_API_KEY: Chainbase API key
         """
         from modules.data_collector import UnifiedDataCollector
         from django.conf import settings
@@ -36,7 +37,8 @@ class DataCollectorAdapter:
             rpc_url=settings.ETHEREUM_RPC_URL,
             etherscan_api_key=settings.ETHERSCAN_API_KEY,
             etherscan_api_url=settings.ETHERSCAN_API_URL,
-            moralis_api_key=settings.MORALIS_API_KEY
+            moralis_api_key=settings.MORALIS_API_KEY,
+            chainbase_api_key=settings.CHAINBASE_API_KEY
         )
 
     def collect_all(self, token_addr: str, days: int = 14) -> Dict[str, Any]:
@@ -106,7 +108,8 @@ class DataCollectorAdapter:
             pair_type=token_info_data['pair_type'],
             token_creator_addr=token_info_data['token_creator_addr'],
             symbol=token_info_data.get('symbol'),
-            name=token_info_data.get('name')
+            name=token_info_data.get('name'),
+            holder_cnt=token_info_data.get('holder_cnt')
         )
 
         # 2. Save PairEvents (bulk)
