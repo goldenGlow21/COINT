@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 *.so
 .Python
+*.egg-info/
+dist/
+build/
 
 # Virtual Environment
 venv/
@@ -19,6 +22,7 @@ db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
+static/
 logs/
 
 # Environment variables
@@ -32,9 +36,9 @@ logs/
 *.swp
 *.swo
 *~
+.DS_Store
 
 # OS
-.DS_Store
 Thumbs.db
 
 # Secret files
@@ -44,3 +48,13 @@ Thumbs.db
 *.pfx
 secrets.json
 credentials.json
+
+# ML models and large data files (already committed)
+# modules/exit_ML/*.csv (except small metadata files)
+# modules/exit_ML/*.pt
+# modules/honeypot_ML/input/*.json (except metadata)
+
+# Brownie
+modules/honeypot_DA/.build/
+modules/honeypot_DA/build/
+modules/honeypot_DA/reports/

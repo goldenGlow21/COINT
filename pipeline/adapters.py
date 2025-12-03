@@ -27,6 +27,7 @@ class DataCollectorAdapter:
             - ETHEREUM_RPC_URL: Web3 RPC endpoint (Alchemy)
             - ETHERSCAN_API_KEY: Etherscan API key
             - ETHERSCAN_API_URL: Etherscan V2 API URL
+            - MORALIS_API_KEY: Moralis API key
         """
         from modules.data_collector import UnifiedDataCollector
         from django.conf import settings
@@ -34,34 +35,40 @@ class DataCollectorAdapter:
         self.collector = UnifiedDataCollector(
             rpc_url=settings.ETHEREUM_RPC_URL,
             etherscan_api_key=settings.ETHERSCAN_API_KEY,
-            etherscan_api_url=settings.ETHERSCAN_API_URL
+            etherscan_api_url=settings.ETHERSCAN_API_URL,
+            moralis_api_key=settings.MORALIS_API_KEY
         )
 
-    def collect_all(self, token_addr: str) -> Dict[str, Any]:
+    def collect_all(self, token_addr: str, days: int = 14) -> Dict[str, Any]:
         """
         Collect all blockchain data for a token.
 
         Args:
             token_addr: Token contract address (0x...)
+            days: Number of days to collect pair events from creation (default: 14)
 
         Returns:
             Dictionary containing:
                 token_info: {
                     - token_addr: str
-                    - token_name: str
-                    - token_symbol: str
-                    - token_decimals: int
-                    - token_total_supply: str
+                    - pair_addr: str
+                    - token_create_ts: datetime
+                    - lp_create_ts: datetime
+                    - pair_idx: int (0 or 1)
+                    - pair_type: str
                     - token_creator_addr: str
-                    - created_at: datetime
                 }
                 pair_events: [
                     {
-                        - pair_addr: str
-                        - evt_name: str (Mint, Burn, Swap, Sync)
-                        - evt_log: dict (JSON-serializable)
+                        - timestamp: datetime
+                        - block_number: int
+                        - tx_hash: str
+                        - tx_from: str
+                        - tx_to: str
+                        - evt_idx: int
+                        - evt_type: str (Mint, Burn, Swap, Sync)
+                        - evt_log: dict (processed event args)
                         - lp_total_supply: str
-                        - created_at: datetime
                     },
                     ...
                 ]
@@ -69,12 +76,12 @@ class DataCollectorAdapter:
                     {
                         - holder_addr: str
                         - balance: str
-                        - created_at: datetime
+                        - rel_to_total: str (percentage)
                     },
                     ...
                 ]
         """
-        return self.collector.collect_all(token_addr)
+        return self.collector.collect_all(token_addr, days)
 
     def save_to_db(self, data: Dict[str, Any]) -> 'TokenInfo':
         """
@@ -92,23 +99,29 @@ class DataCollectorAdapter:
         token_info_data = data['token_info']
         token_info = TokenInfo.objects.create(
             token_addr=token_info_data['token_addr'],
-            token_name=token_info_data['token_name'],
-            token_symbol=token_info_data['token_symbol'],
-            token_decimals=token_info_data['token_decimals'],
-            token_total_supply=token_info_data['token_total_supply'],
+            pair_addr=token_info_data['pair_addr'],
+            token_create_ts=token_info_data['token_create_ts'],
+            lp_create_ts=token_info_data['lp_create_ts'],
+            pair_idx=token_info_data['pair_idx'],
+            pair_type=token_info_data['pair_type'],
             token_creator_addr=token_info_data['token_creator_addr'],
-            created_at=token_info_data['created_at']
+            symbol=token_info_data.get('symbol'),
+            name=token_info_data.get('name')
         )
 
         # 2. Save PairEvents (bulk)
         pair_events = [
             PairEvent(
                 token_info=token_info,
-                pair_addr=event['pair_addr'],
-                evt_name=event['evt_name'],
+                timestamp=event['timestamp'],
+                block_number=event['block_number'],
+                tx_hash=event['tx_hash'],
+                tx_from=event['tx_from'],
+                tx_to=event['tx_to'],
+                evt_idx=event['evt_idx'],
+                evt_type=event['evt_type'],
                 evt_log=event['evt_log'],
-                lp_total_supply=event['lp_total_supply'],
-                created_at=event['created_at']
+                lp_total_supply=event['lp_total_supply']
             )
             for event in data['pair_events']
         ]
@@ -120,7 +133,7 @@ class DataCollectorAdapter:
                 token_info=token_info,
                 holder_addr=holder['holder_addr'],
                 balance=holder['balance'],
-                created_at=holder['created_at']
+                rel_to_total=holder['rel_to_total']
             )
             for holder in data['holders']
         ]

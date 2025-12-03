@@ -44,6 +44,18 @@ class TokenInfo(models.Model):
         null=True,
         help_text="Token creator address"
     )
+    symbol = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Token symbol"
+    )
+    name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Token name"
+    )
 
     class Meta:
         db_table = 'token_info'
@@ -262,6 +274,10 @@ class HoneypotProcessedData(models.Model):
         primary_key=True,
         db_column='token_addr_idx'
     )
+    token_addr = models.CharField(
+        max_length=42,
+        help_text="Token contract address"
+    )
 
     # Trade counts
     total_buy_cnt = models.IntegerField()
@@ -297,6 +313,26 @@ class HoneypotProcessedData(models.Model):
     consecutive_sell_block_windows = models.IntegerField()
     total_sell_block_windows = models.IntegerField()
 
+    # Holder distribution metrics
+    gini_coefficient = models.FloatField()
+    total_holders = models.IntegerField()
+    whale_count = models.IntegerField()
+    whale_total_pct = models.FloatField()
+    small_holders_pct = models.FloatField()
+    holder_balance_std = models.FloatField()
+    holder_balance_cv = models.FloatField()
+    hhi_index = models.FloatField()
+
+    # Advanced flags and scores
+    inactive_token_flag = models.IntegerField()
+    whale_domination_ratio = models.FloatField()
+    whale_presence_flag = models.IntegerField()
+    few_holders_flag = models.IntegerField()
+    airdrop_like_flag = models.IntegerField()
+    concentrated_large_community_score = models.FloatField()
+    hhi_per_holder = models.FloatField()
+    whale_but_no_small_flag = models.IntegerField()
+
     class Meta:
         db_table = 'honeypot_processed_data'
 
@@ -307,11 +343,8 @@ class HoneypotProcessedData(models.Model):
 class ExitProcessedData(models.Model):
     """
     Preprocessed data for exit scam detection analysis.
-    Multiple records per token (one per 5-second window).
+    Multiple records per token (one per event/transaction).
     """
-    win_id = models.IntegerField(
-        help_text="Window identifier (per token)"
-    )
     token_info = models.ForeignKey(
         TokenInfo,
         on_delete=models.CASCADE,
@@ -319,91 +352,100 @@ class ExitProcessedData(models.Model):
         db_column='token_addr_idx'
     )
 
-    # Window metadata
-    win_start_ts = models.DateTimeField()
-    win_start_block = models.IntegerField()
-    win_tx_count = models.IntegerField()
-    win_blocks = models.IntegerField()
+    event_time = models.DateTimeField(
+        help_text="Event occurrence timestamp"
+    )
+    tx_hash = models.CharField(
+        max_length=66,
+        help_text="Transaction hash"
+    )
 
-    # 5-second window LP metrics
-    lp_start_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    lp_end_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    lp_drop_amount_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    burn_frac_5s = models.FloatField()
+    # Time delta
+    delta_t_sec = models.FloatField(
+        help_text="Time difference from previous event"
+    )
 
-    # 5-second window reserve metrics
-    reserve_token_start_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    reserve_token_end_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    reserve_token_drop_frac_5s = models.FloatField()
+    # Event type flags
+    is_mint_event = models.IntegerField(
+        help_text="1 if Mint event included, 0 otherwise"
+    )
+    is_burn_event = models.IntegerField(
+        help_text="1 if Burn event included, 0 otherwise"
+    )
+    is_swap_event = models.IntegerField(
+        help_text="1 if Swap event included, 0 otherwise"
+    )
 
-    # 5-second window event metrics
-    lp_mint_amount_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    lp_burn_amount_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    mint_events_5s = models.IntegerField()
-    burn_events_5s = models.IntegerField()
-    swap_events_5s = models.IntegerField()
-    time_since_last_mint_sec_5s = models.FloatField()
+    # LP and reserves
+    lp_total_supply = models.DecimalField(
+        max_digits=78,
+        decimal_places=18,
+        help_text="Current LP total supply"
+    )
+    reserve_base_drop_frac = models.FloatField(
+        help_text="Base token decrease rate"
+    )
+    reserve_quote = models.DecimalField(
+        max_digits=78,
+        decimal_places=18,
+        help_text="Current major token balance"
+    )
+    reserve_quote_drop_frac = models.FloatField(
+        help_text="Major token decrease rate"
+    )
 
-    # 5-second window LP peak metrics
-    lp_peak_drop_frac_5s = models.FloatField()
-    lp_start_peak_frac_5s = models.FloatField()
+    # Price and ratio
+    price_ratio = models.FloatField(
+        help_text="Price ratio"
+    )
+    swap_sell_to_reserve_ratio = models.FloatField(
+        help_text="Base token inflow ratio to reserve"
+    )
+    time_since_last_mint_sec = models.FloatField(
+        help_text="Time elapsed since last Mint (seconds)"
+    )
 
-    # 5-second window swap volumes
-    swap_base_sell_volume_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    swap_base_buy_volume_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    swap_quote_sell_volume_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    swap_quote_buy_volume_5s = models.DecimalField(max_digits=78, decimal_places=18)
+    # Per-second delta metrics
+    price_ratio_delta_per_sec = models.FloatField(
+        help_text="Price ratio change rate per second"
+    )
+    lp_supply_delta_per_sec = models.FloatField(
+        help_text="LP supply decrease rate per second"
+    )
+    reserve_quote_delta_per_sec = models.FloatField(
+        help_text="Major token balance decrease rate per second"
+    )
+    lp_minted_amount_per_sec = models.FloatField(
+        help_text="LP minted amount per second"
+    )
+    lp_burned_amount_per_sec = models.FloatField(
+        help_text="LP burned amount per second"
+    )
 
-    # 5-second window cumulative metrics
-    cum_base_minted_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    cum_base_burned_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    cum_quote_minted_5s = models.DecimalField(max_digits=78, decimal_places=18)
-    cum_quote_burned_5s = models.DecimalField(max_digits=78, decimal_places=18)
-
-    # Holder concentration
-    holder_top1_supply_pct = models.FloatField()
-    holder_pair_supply_pct = models.FloatField()
-    holder_top20_supply_pct = models.FloatField()
-
-    # 60-second rolling window metrics
-    mint_sell_swap_count_60s = models.IntegerField()
-    mint_sell_base_volume_60s = models.DecimalField(max_digits=78, decimal_places=18)
-    mint_sell_base_abs_max_60s = models.DecimalField(max_digits=78, decimal_places=18)
-    mint_sell_to_reserve_max_ratio_60s = models.FloatField()
-    mint_sell_to_reserve_avg_ratio_60s = models.FloatField()
-    mint_sell_quote_volume_60s = models.DecimalField(max_digits=78, decimal_places=18)
-
-    # 600-second rolling window event counts
-    event_count_600s = models.IntegerField()
-    burn_events_600s = models.IntegerField()
-    mint_events_600s = models.IntegerField()
-    swap_events_600s = models.IntegerField()
-
-    # 600-second rolling window LP metrics
-    lp_start_600s = models.DecimalField(max_digits=78, decimal_places=18)
-    lp_drop_frac_600s = models.FloatField()
-    lp_cum_drawdown_600s = models.FloatField()
-    lp_burn_amount_600s = models.DecimalField(max_digits=78, decimal_places=18)
-    lp_mint_amount_600s = models.DecimalField(max_digits=78, decimal_places=18)
-    time_since_last_mint_sec_600s = models.FloatField()
-    consecutive_drop_windows_600s = models.IntegerField()
-
-    # 600-second rolling window reserve and price metrics
-    reserve_token_start_600s = models.DecimalField(max_digits=78, decimal_places=18)
-    price_ratio_start_600s = models.FloatField()
-    price_ratio_end_600s = models.FloatField()
+    # Swap volumes per second
+    swap_base_in_amount_per_sec = models.FloatField(
+        help_text="Base token inflow rate per second"
+    )
+    swap_base_out_amount_per_sec = models.FloatField(
+        help_text="Base token outflow rate per second"
+    )
+    swap_quote_in_amount_per_sec = models.FloatField(
+        help_text="Quote token inflow rate per second"
+    )
+    swap_quote_out_amount_per_sec = models.FloatField(
+        help_text="Quote token outflow rate per second"
+    )
 
     class Meta:
         db_table = 'exit_processed_data'
-        ordering = ['token_info', 'win_id']
+        ordering = ['token_info', 'event_time']
         indexes = [
-            models.Index(fields=['token_info', 'win_id']),
-            models.Index(fields=['win_start_ts']),
+            models.Index(fields=['token_info', 'event_time']),
+            models.Index(fields=['tx_hash']),
         ]
-        unique_together = [['token_info', 'win_id']]
 
     def __str__(self):
-        return f"Exit data for token {self.token_info.id}, window {self.win_id}"
+        return f"Exit data for token {self.token_info.id}, tx {self.tx_hash}"
 
 
 class HoneypotDaResult(models.Model):
