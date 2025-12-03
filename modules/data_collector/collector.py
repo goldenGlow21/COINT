@@ -62,13 +62,13 @@ class UnifiedDataCollector:
 
         logger.info(f"Connected to Ethereum node (chain_id={self.web3.eth.chain_id})")
 
-    def collect_all(self, token_addr: str, days: int = 14) -> Dict[str, Any]:
+    def collect_all(self, token_addr: str, days: int = None) -> Dict[str, Any]:
         """
         Collect all data for a given token address.
 
         Args:
             token_addr: Token contract address
-            days: Number of days to collect events from pair creation
+            days: Number of days to collect events from pair creation (None = no limit)
 
         Returns:
             Dictionary containing token_info, pair_events, holders
@@ -102,11 +102,14 @@ class UnifiedDataCollector:
             }
 
         # Collect remaining pair events (excluding initial events)
-        end_block = self._get_block_after_days(
-            pair_info['pair_created_block'],
-            pair_info['pair_created_ts'],
-            days
-        )
+        if days is not None:
+            end_block = self._get_block_after_days(
+                pair_info['pair_created_block'],
+                pair_info['pair_created_ts'],
+                days
+            )
+        else:
+            end_block = 'latest'
 
         remaining_events = self._collect_pair_events(
             pair_info['pair_addr'],
@@ -268,13 +271,13 @@ class UnifiedDataCollector:
             logger.error(f"Error extracting initial events: {e}")
             return [], 0.0, set()
 
-    def _collect_pair_events(self, pair_addr: str, start_block: int, end_block: int, lp_total_supply: float, init_seen: Set[Tuple[str, int]]) -> List[Dict[str, Any]]:
+    def _collect_pair_events(self, pair_addr: str, start_block: int, end_block, lp_total_supply: float, init_seen: Set[Tuple[str, int]]) -> List[Dict[str, Any]]:
         """Collect pair events using Etherscan getLogs API, excluding init_seen."""
         logger.info(f"Collecting pair events for {pair_addr} from block {start_block} to {end_block}")
 
         events = []
         page = 1
-        max_events = 1000
+        max_events = 3000
         reserve = [0.0, 0.0]
 
         while len(events) < max_events:
