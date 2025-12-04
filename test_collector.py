@@ -13,8 +13,8 @@ print("🗑️  기존 데이터 삭제 중...")
 PairEvent.objects.all().delete()
 HolderInfo.objects.all().delete()
 TokenInfo.objects.all().delete()
-ExitProcessedDataInstance.all().delete()
-ExitProcessedDataStatic.all().delete()
+ExitProcessedDataInstance.objects.all().delete()
+ExitProcessedDataStatic.objects.all().delete()
 
 print("   삭제 완료!")
 
