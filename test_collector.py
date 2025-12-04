@@ -6,13 +6,16 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from pipeline.adapters import DataCollectorAdapter
-from api.models import TokenInfo, PairEvent, HolderInfo
+from api.models import TokenInfo, PairEvent, HolderInfo, ExitProcessedDataInstance, ExitProcessedDataStatic
 
 # 기존 데이터 삭제
 print("🗑️  기존 데이터 삭제 중...")
 PairEvent.objects.all().delete()
 HolderInfo.objects.all().delete()
 TokenInfo.objects.all().delete()
+ExitProcessedDataInstance.all().delete()
+ExitProcessedDataStatic.all().delete()
+
 print("   삭제 완료!")
 
 # 데이터 수집
