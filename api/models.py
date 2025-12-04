@@ -345,7 +345,7 @@ class HoneypotProcessedData(models.Model):
         return f"Honeypot data for token {self.token_info.id}"
 
 
-class ExitProcessedData(models.Model):
+class ExitProcessedDataInstance(models.Model):
     """
     Preprocessed data for exit scam detection analysis.
     Multiple records per token (one per event/transaction).
@@ -353,7 +353,7 @@ class ExitProcessedData(models.Model):
     token_info = models.ForeignKey(
         TokenInfo,
         on_delete=models.CASCADE,
-        related_name='exit_processed',
+        related_name='exit_processed_instance',
         db_column='token_addr_idx'
     )
 
@@ -371,78 +371,82 @@ class ExitProcessedData(models.Model):
     )
 
     # Event type flags
-    is_mint_event = models.IntegerField(
-        help_text="1 if Mint event included, 0 otherwise"
-    )
-    is_burn_event = models.IntegerField(
-        help_text="1 if Burn event included, 0 otherwise"
-    )
-    is_swap_event = models.IntegerField(
+    is_swap_event = models.BooleanField(
         help_text="1 if Swap event included, 0 otherwise"
     )
 
     # LP and reserves
     lp_total_supply = models.DecimalField(
-        max_digits=78,
+        max_digits=38,
         decimal_places=18,
+        null = True,
+        blank = True,
         help_text="Current LP total supply"
     )
     reserve_base_drop_frac = models.FloatField(
+        null = True,
+        blank = True,
         help_text="Base token decrease rate"
     )
     reserve_quote = models.DecimalField(
-        max_digits=78,
+        max_digits=38,
         decimal_places=18,
         help_text="Current major token balance"
     )
     reserve_quote_drop_frac = models.FloatField(
+        null = True,
+        blank = True,
         help_text="Major token decrease rate"
     )
 
     # Price and ratio
     price_ratio = models.FloatField(
+        null = True,
+        blank = True,
         help_text="Price ratio"
     )
-    swap_sell_to_reserve_ratio = models.FloatField(
-        help_text="Base token inflow ratio to reserve"
-    )
     time_since_last_mint_sec = models.FloatField(
+        null = True,
+        blank = True,
         help_text="Time elapsed since last Mint (seconds)"
     )
 
-    # Per-second delta metrics
-    price_ratio_delta_per_sec = models.FloatField(
-        help_text="Price ratio change rate per second"
+    # LP and reserved 2
+    lp_minted_amount_per_sec = models.DecimalField(
+        max_digits=38,
+        decimal_places = 18,
+        null = True,
+        blank = True
     )
-    lp_supply_delta_per_sec = models.FloatField(
-        help_text="LP supply decrease rate per second"
+    lp_burned_amount_per_sec = models.DecimalField(
+        max_digits=38,
+        decimal_places = 18,
+        null = True,
+        blank = True
     )
-    reserve_quote_delta_per_sec = models.FloatField(
-        help_text="Major token balance decrease rate per second"
+    recent_mint_ratio_last10 = models.FloatField(
+        null = True,
+        blank = True
     )
-    lp_minted_amount_per_sec = models.FloatField(
-        help_text="LP minted amount per second"
+    recent_mint_ratio_last20 = models.FloatField(
+        null = True,
+        blank = True
     )
-    lp_burned_amount_per_sec = models.FloatField(
-        help_text="LP burned amount per second"
+    recent_burn_ratio_last10 = models.FloatField(
+        null = True,
+        blank = True
     )
-
-    # Swap volumes per second
-    swap_base_in_amount_per_sec = models.FloatField(
-        help_text="Base token inflow rate per second"
+    recent_burn_ratio_last20 = models.FloatField(
+        null = True,
+        blank = True
     )
-    swap_base_out_amount_per_sec = models.FloatField(
-        help_text="Base token outflow rate per second"
-    )
-    swap_quote_in_amount_per_sec = models.FloatField(
-        help_text="Quote token inflow rate per second"
-    )
-    swap_quote_out_amount_per_sec = models.FloatField(
-        help_text="Quote token outflow rate per second"
+    reserve_quote_drawdown = models.FloatField(
+        null = True,
+        blank = True
     )
 
     class Meta:
-        db_table = 'exit_processed_data'
+        db_table = 'exit_processed_data_instance'
         ordering = ['token_info', 'event_time']
         indexes = [
             models.Index(fields=['token_info', 'event_time']),
@@ -450,8 +454,62 @@ class ExitProcessedData(models.Model):
         ]
 
     def __str__(self):
-        return f"Exit data for token {self.token_info.id}, tx {self.tx_hash}"
+        return f"Exit data(instance) for token {self.token_info.id}, tx {self.tx_hash}"
 
+class ExitProcessedDataStatic(models.Model):
+    """
+    Preprocessed data for exit scam detection analysis.
+    Multiple records per token (one per event/transaction).
+    """
+    token_info = models.ForeignKey(
+        TokenInfo,
+        on_delete=models.CASCADE,
+        related_name='exit_processed_static',
+        db_column='token_addr_idx'
+    )
+
+    price_ratio_realized_vol = models.FloatField(
+        null = True,
+        blank = True
+    )
+    price_ratio_range  = models.FloatField(
+        null = True,
+        blank = True
+    )
+    reserve_quote_realized_vol = models.FloatField(
+        null = True,
+        blank = True
+    )
+    burn_ratio_all = models.FloatField(
+        null = True,
+        blank = True
+    )
+    reserve_quote_drawdown_global = models.FloatField(
+        null = True,
+        blank = True
+    )
+    swap_share = models.FloatField(
+        null = True,
+        blank = True
+    )
+    swaps_last5 = models.FloatField(
+        null = True,
+        blank = True
+    )
+    liquidity_age_days = models.FloatField(
+        null = True,
+        blank = True
+    )
+    holder_cnt = models.IntegerField(
+        null = True,
+        blank = True
+    )
+    
+    class Meta:
+        db_table = 'exit_processed_data_static'
+
+    def __str__(self):
+        return f"Exit data(static) for token {self.token_info.id}"
 
 class HoneypotDaResult(models.Model):
     """

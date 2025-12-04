@@ -17,7 +17,7 @@ print("   삭제 완료!")
 
 # 데이터 수집
 collector = DataCollectorAdapter()
-token_addr = "0xbbff2cccd0e774478b2316fbbb22913f1f1475a7"
+token_addr = "0x8d7C152D6458290e9336024f2968Cbff2420CEe5"
 
 print(f"\n🔍 수집 시작: {token_addr}")
 start_time = time.time()
@@ -28,7 +28,7 @@ print(f"\n📊 수집된 데이터:")
 print(f"   Token Info: {data['token_info']['token_addr']}")
 print(f"   Pair Addr: {data['token_info']['pair_addr']}")
 print(f"   Pair Events: {len(data['pair_events'])}개")
-print(f"   Holders: {len(data['holders'])}개")
+print(f"   Holders: {data['token_info']['holder_cnt']}개")
 print(f"   수집 시간: {collection_time:.2f}초")
 
 start_time = time.time()
