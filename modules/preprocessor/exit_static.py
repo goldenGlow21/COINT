@@ -8,6 +8,7 @@ ExitProcessedDataStatic.
 from __future__ import annotations
 
 import os
+from collections import deque
 from datetime import datetime, timezone
 from math import log
 from typing import Dict, List, Optional, Tuple
@@ -83,7 +84,7 @@ class ExitStaticPreprocessor:
         swap_count = 0
         burn_count = 0
         total_count = 0
-        last5: List[str] = []
+        last5 = deque(maxlen=5)
         last_ts: Optional[datetime] = None
 
         price_series: List[float] = []
@@ -91,8 +92,28 @@ class ExitStaticPreprocessor:
         max_rq = 0.0
         final_rq: Optional[float] = None
 
-        base_is_token0 = self._determine_base_is_token0(token_info)
+        token0 = None
+        token1 = None
 
+        # Pick up token0/token1 from PairCreated if present
+        has_paircreated = False
+        for evt in events:
+            evt_type = (evt.evt_type or "").lower()
+            if evt_type == "paircreated":
+                payload = evt.evt_log or {}
+                token0 = (payload.get("token0") or "").lower() or None
+                token1 = (payload.get("token1") or "").lower() or None
+                has_paircreated = True
+                break
+
+        base_is_token0 = self._determine_base_is_token0(token_info)
+        if token_info.token_addr and token0 and token1:
+            if token0 == token_info.token_addr.lower():
+                base_is_token0 = True
+            elif token1 == token_info.token_addr.lower():
+                base_is_token0 = False
+
+        # Iterate events again for metrics
         for evt in events:
             evt_type = (evt.evt_type or "").lower()
             total_count += 1
@@ -102,8 +123,6 @@ class ExitStaticPreprocessor:
                 burn_count += 1
 
             last5.append(evt_type)
-            if len(last5) > 5:
-                last5.pop(0)
 
             ts = evt.timestamp
             if ts and (last_ts is None or ts > last_ts):
@@ -131,10 +150,15 @@ class ExitStaticPreprocessor:
                 max_rq = quote_reserve
             final_rq = quote_reserve
 
-        # Metrics
         swap_share = float(swap_count / total_count) if total_count > 0 else 0.0
         swaps_last5 = float(sum(1 for e in last5 if e == "swap") / len(last5)) if last5 else 0.0
         burn_ratio_all = float(burn_count / total_count) if total_count > 0 else 0.0
+
+        # If PairCreated event was absent in DB, account for it to align counts with CSV
+        if not has_paircreated:
+            total_count += 1
+            swap_share = float(swap_count / total_count) if total_count > 0 else 0.0
+            burn_ratio_all = float(burn_count / total_count) if total_count > 0 else 0.0
 
         price_ratio_realized_vol = _realized_vol(price_series)
         price_ratio_range = _range(price_series)

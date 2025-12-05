@@ -20,7 +20,7 @@ print("   삭제 완료!")
 
 # 데이터 수집
 collector = DataCollectorAdapter()
-token_addr = "0x8d7C152D6458290e9336024f2968Cbff2420CEe5"
+token_addr = "0x8cF091eDAC829CdF4e89d8292C19e2cf7B6A45eE"
 
 print(f"\n🔍 수집 시작: {token_addr}")
 start_time = time.time()

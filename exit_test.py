@@ -1,15 +1,14 @@
-from modules.preprocessor.exit_instance import (
-    ExitInstancePreprocessor,
-    setup_django,
-)
-from api.models import TokenInfo
 from pprint import pprint
+
+from modules.preprocessor.exit_instance import setup_django
 
 
 def main() -> None:
     import sys
 
     setup_django()
+    from api.models import TokenInfo  # defer until after settings
+    from modules.preprocessor.exit_instance import ExitInstancePreprocessor
 
     if len(sys.argv) < 2:
         raise SystemExit("Usage: python exit_test.py <token_info_id>")

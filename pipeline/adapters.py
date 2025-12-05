@@ -102,6 +102,7 @@ class DataCollectorAdapter:
         token_info = TokenInfo.objects.create(
             token_addr=token_info_data['token_addr'],
             pair_addr=token_info_data['pair_addr'],
+            pair_creator=token_info_data['pair_creator'],
             token_create_ts=token_info_data['token_create_ts'],
             lp_create_ts=token_info_data['lp_create_ts'],
             pair_idx=token_info_data['pair_idx'],

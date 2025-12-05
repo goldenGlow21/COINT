@@ -25,6 +25,9 @@ class TokenInfo(models.Model):
         max_length=42,
         help_text="Pair contract address"
     )
+    pair_creator = models.CharField(
+        max_length=42
+    )
     token_create_ts = models.DateTimeField(
         help_text="Token creation timestamp"
     )
@@ -371,14 +374,12 @@ class ExitProcessedDataInstance(models.Model):
     )
 
     # Event type flags
-    is_swap_event = models.BooleanField(
+    is_swap_event = models.IntegerField(
         help_text="1 if Swap event included, 0 otherwise"
     )
 
     # LP and reserves
-    lp_total_supply = models.DecimalField(
-        max_digits=38,
-        decimal_places=18,
+    lp_total_supply = models.FloatField(
         null = True,
         blank = True,
         help_text="Current LP total supply"
@@ -388,9 +389,7 @@ class ExitProcessedDataInstance(models.Model):
         blank = True,
         help_text="Base token decrease rate"
     )
-    reserve_quote = models.DecimalField(
-        max_digits=38,
-        decimal_places=18,
+    reserve_quote = models.FloatField(
         help_text="Current major token balance"
     )
     reserve_quote_drop_frac = models.FloatField(
@@ -412,15 +411,11 @@ class ExitProcessedDataInstance(models.Model):
     )
 
     # LP and reserved 2
-    lp_minted_amount_per_sec = models.DecimalField(
-        max_digits=38,
-        decimal_places = 18,
+    lp_minted_amount_per_sec = models.FloatField(
         null = True,
         blank = True
     )
-    lp_burned_amount_per_sec = models.DecimalField(
-        max_digits=38,
-        decimal_places = 18,
+    lp_burned_amount_per_sec = models.FloatField(
         null = True,
         blank = True
     )
@@ -443,6 +438,20 @@ class ExitProcessedDataInstance(models.Model):
     reserve_quote_drawdown = models.FloatField(
         null = True,
         blank = True
+    )
+
+    # Mask Feature
+    lp_total_supply_mask = models.FloatField(
+        null = True
+    )
+    reserve_quote_mask = models.FloatField(
+        null = True
+    )
+    price_ratio_mask = models.FloatField(
+        null = True
+    )
+    time_since_last_mint_sec_mask = models.FloatField(
+        null = True
     )
 
     class Meta:
@@ -504,6 +513,8 @@ class ExitProcessedDataStatic(models.Model):
         null = True,
         blank = True
     )
+
+
     
     class Meta:
         db_table = 'exit_processed_data_static'
@@ -630,13 +641,22 @@ class ExitMlResult(models.Model):
     probability = models.FloatField(
         help_text="Exit scam probability (0-1)"
     )
-    threshold = models.FloatField(
-        default=0.6047,
-        help_text="Decision threshold from model"
+    tx_cnt = models.IntegerField()
+    timestamp = models.DateTimeField()
+    tx_hash = models.CharField(
+        max_length = 66
     )
-    is_exit_scam = models.BooleanField(
-        help_text="True if probability >= threshold"
-    )
+
+    # Top Instance Feature
+    reserve_base_drop_frac = models.FloatField()
+    reserve_quote = models.FloatField()
+    reserve_quote_drop_frac = models.FloatField()
+    price_ratio = models.FloatField()
+    time_since_last_mint_sec = models.FloatField()
+    
+    # Static Feature
+    liquidity_age_days = models.FloatField()
+    reserve_quote_drawdown_global = models.FloatField()
 
     created_at = models.DateTimeField(default=timezone.now)
 
