@@ -185,11 +185,3 @@ class ExitStaticPreprocessor:
             "liquidity_age_days": liquidity_age_days,
             "holder_cnt": holder_cnt,
         }
-
-    def save_to_db(self, token_info, data: Dict[str, float]) -> None:
-        from api.models import ExitProcessedDataStatic
-
-        ExitProcessedDataStatic.objects.update_or_create(
-            token_info=token_info,
-            defaults=data,
-        )

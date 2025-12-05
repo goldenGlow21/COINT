@@ -169,12 +169,8 @@ def _select_top(weights: np.ndarray, k: int = 1) -> List[int]:
     return np.argsort(weights)[::-1][:k].tolist()
 
 
-# Core inference -------------------------------------------------------------
 def run_exit_detection(token_info_id: int) -> Dict[str, object]:
-    """
-    Run exit MIL inference for a token (by token_info.id) using DB features.
-    Returns a result dict and saves to ExitMlResult + related tables.
-    """
+    """Run exit MIL inference for a token (by token_info.id) using DB features."""
     setup_django()
     from api.models import (
         ExitProcessedDataInstance,
@@ -312,69 +308,5 @@ def run_exit_detection(token_info_id: int) -> Dict[str, object]:
         **{k: instance_record["feature_values"].get(k) for k in INSTANCE_OUTPUT_FEATURES},
         **static_record,
     }
-
-    # Save to DB
-    # Map required fields (model has non-null constraints)
-    tx_cnt_val = int(df_feat.shape[0])
-    tx_ts_val = result.get("timestamp")
-    tx_hash_val = result.get("tx_hash")
-    feat_vals = {k: result.get(k) for k in INSTANCE_OUTPUT_FEATURES}
-
-    from dateutil import parser as date_parser
-
-    ts_parsed = None
-    if tx_ts_val:
-        try:
-            ts_parsed = date_parser.isoparse(tx_ts_val)
-        except Exception:
-            ts_parsed = None
-
-    static_vals = {k: result.get(k) for k in STATIC_OUTPUT_FEATURES}
-
-    exit_result, _ = ExitMlResult.objects.update_or_create(
-        token_info=token_info,
-        defaults={
-            "probability": result["probability"],
-            "tx_cnt": tx_cnt_val,
-            "timestamp": ts_parsed,
-            "tx_hash": tx_hash_val or "",
-            "reserve_base_drop_frac": float(feat_vals.get("reserve_base_drop_frac") or 0.0),
-            "reserve_quote": float(feat_vals.get("reserve_quote") or 0.0),
-            "reserve_quote_drop_frac": float(feat_vals.get("reserve_quote_drop_frac") or 0.0),
-            "price_ratio": float(feat_vals.get("price_ratio") or 0.0),
-            "time_since_last_mint_sec": float(feat_vals.get("time_since_last_mint_sec") or 0.0),
-            "liquidity_age_days": float(static_vals.get("liquidity_age_days") or 0.0),
-            "reserve_quote_drawdown_global": float(static_vals.get("reserve_quote_drawdown_global") or 0.0),
-        },
-    )
-
-    # Top transaction (rank 1)
-    tx_data = instance_record
-    if tx_data:
-        ts_val = tx_data.get("timestamp")
-        tx_hash_val = tx_data.get("tx_hash")
-
-        ts_parsed = None
-        if ts_val:
-            try:
-                ts_parsed = date_parser.isoparse(ts_val)
-            except Exception:
-                ts_parsed = None
-
-        ExitMlDetectTransaction.objects.update_or_create(
-            exit_ml_result=exit_result,
-            rank=1,
-            defaults={
-                "timestamp": ts_parsed,
-                "tx_hash": tx_hash_val,
-                "feature_values": tx_data.get("feature_values", {}),
-            },
-        )
-
-    # Static features
-    ExitMlDetectStatic.objects.update_or_create(
-        exit_ml_result=exit_result,
-        defaults={"feature_values": static_record},
-    )
 
     return result

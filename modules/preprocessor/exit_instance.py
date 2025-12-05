@@ -435,48 +435,5 @@ class ExitInstancePreprocessor:
 
         return rows
 
-    def save_to_db(self, token_info, rows: List[Dict[str, object]]) -> int:
-        """Persist computed rows into ExitProcessedDataInstance via bulk_create."""
-        from api.models import ExitProcessedDataInstance
-
-        if not rows:
-            return 0
-
-        # Clear previous rows for this token to avoid duplicates when re-running.
-        ExitProcessedDataInstance.objects.filter(token_info=token_info).delete()
-
-        objects = []
-        for row in rows:
-            objects.append(
-                ExitProcessedDataInstance(
-                    token_info=token_info,
-                    event_time=row["event_time"],
-                    tx_hash=row.get("tx_hash") or "",
-                    delta_t_sec=row.get("delta_t_sec"),
-                    is_swap_event=bool(row.get("is_swap_event")),
-                    lp_total_supply=Decimal(str(row["lp_total_supply"])) if row.get("lp_total_supply") is not None else None,
-                    reserve_base_drop_frac=row.get("reserve_base_drop_frac"),
-                    reserve_quote=Decimal(str(row["reserve_quote"])) if row.get("reserve_quote") is not None else None,
-                    reserve_quote_drop_frac=row.get("reserve_quote_drop_frac"),
-                    price_ratio=row.get("price_ratio"),
-                    time_since_last_mint_sec=row.get("time_since_last_mint_sec"),
-                    lp_minted_amount_per_sec=Decimal(str(row["lp_minted_amount_per_sec"])) if row.get("lp_minted_amount_per_sec") is not None else None,
-                    lp_burned_amount_per_sec=Decimal(str(row["lp_burned_amount_per_sec"])) if row.get("lp_burned_amount_per_sec") is not None else None,
-                    recent_mint_ratio_last10=row.get("recent_mint_ratio_last10"),
-                    recent_mint_ratio_last20=row.get("recent_mint_ratio_last20"),
-                    recent_burn_ratio_last10=row.get("recent_burn_ratio_last10"),
-                    recent_burn_ratio_last20=row.get("recent_burn_ratio_last20"),
-                    reserve_quote_drawdown=row.get("reserve_quote_drawdown"),
-                    lp_total_supply_mask=row.get("lp_total_supply_mask"),
-                    reserve_quote_mask=row.get("reserve_quote_mask"),
-                    price_ratio_mask=row.get("price_ratio_mask"),
-                    time_since_last_mint_sec_mask=row.get("time_since_last_mint_sec_mask"),
-                )
-            )
-
-        ExitProcessedDataInstance.objects.bulk_create(objects, batch_size=1000)
-        return len(objects)
-
-
 if __name__ == "__main__":
     raise SystemExit("Run this via exit_test.py or integrate via PreprocessorAdapter.")
